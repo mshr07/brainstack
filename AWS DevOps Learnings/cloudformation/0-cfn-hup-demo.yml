@@ -1,0 +1,79 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Deploy a web server with cfn-init and cfn-hup, serving a custom HTML page
+
+Resources:
+  WebServerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable HTTP access
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+
+  MyInstance:
+    Type: AWS::EC2::Instance
+    Metadata:
+      AWS::CloudFormation::Init:
+        configSets:
+          default: ["install", "configure"]
+        install:
+          packages:
+            yum:
+              httpd: []
+          files:
+            "/etc/cfn/cfn-hup.conf":
+              content: !Sub |
+                [main]
+                stack=${AWS::StackId}
+                region=${AWS::Region}
+                interval=1
+            "/etc/cfn/hooks.d/cfn-auto-reloader.conf":
+              content: !Sub |
+                [cfn-auto-reloader-hook]
+                triggers=post.update
+                path=Resources.MyInstance.Metadata.AWS::CloudFormation::Init
+                action=/opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource MyInstance --configsets default --region ${AWS::Region}
+                runas=root
+        configure:
+          files:
+            "/var/www/html/index.html":
+              content: |
+                <html>
+                <head>
+                  <title>Hello World</title>
+                </head>
+                <body>
+                  <h1>Hello, World! Welcome to my website!</h1>
+                  <p> I've added some content to it </p>
+                </body>
+                </html>
+              mode: "000644"
+              owner: "root"
+              group: "root"
+          services:
+            sysvinit:
+              httpd:
+                enabled: "true"
+                ensureRunning: "true"
+    Properties:
+      ImageId: ami-0a3c3a20c09d6f377
+      InstanceType: "t2.micro"
+      SecurityGroups:
+        - Ref: WebServerSecurityGroup
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          yum update -y aws-cfn-bootstrap
+          # Initialize cfn-init
+          /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource MyInstance --configsets default --region ${AWS::Region}
+          # Start cfn-hup
+          /opt/aws/bin/cfn-hup || error_exit 'Failed to start cfn-hup'
+          # Signal success
+          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource MyInstance --region ${AWS::Region}
+
+Outputs:
+  WebsiteURL:
+    Description: URL of the website
+    Value: !Sub "http://${MyInstance.PublicDnsName}/"

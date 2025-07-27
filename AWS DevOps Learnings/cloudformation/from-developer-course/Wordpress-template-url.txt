@@ -1,0 +1,1 @@
+https://cloudformation-templates-us-east-1.s3.us-east-1.amazonaws.com/WordPress_Multi_AZ.template
