@@ -1,0 +1,20 @@
+services:
+  app:
+    build:
+      context: .
+    ports:
+      - ":5000"
+    
+    volumes:
+      - ./.aws:/root/.aws:ro
+
+  nginx:
+    build: 
+      context: .
+      dockerfile: Dockerfile.nginx
+    
+    depends_on:
+      - app
+
+    ports:
+      - "80:80"

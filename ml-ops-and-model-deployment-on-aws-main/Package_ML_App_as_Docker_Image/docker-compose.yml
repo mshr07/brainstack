@@ -1,0 +1,16 @@
+services:
+  app:
+    image: laxmimerit/app
+
+    volumes:
+      - ./.aws:/root/.aws:ro
+
+  
+  nginx:
+    image: laxmimerit/nginx
+
+    depends_on:
+      - app
+
+    ports:
+      - "80:80"
