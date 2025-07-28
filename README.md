@@ -1,8 +1,8 @@
-# 🧠 Brain Stack – My Evolving Tech Knowledgebase
+# 🧠 BrainStack – My Evolving Tech Knowledgebase
 
-Brain Stack is a personal, ever-evolving repository where I document, build, and refine everything I learn across my tech journey — from full stack development and DevOps to GenAI, cloud architecture, and system design.
+🚀Brain Stack is a personal, ever-evolving repository where I document, build, and refine everything I learn across my tech journey — from full stack development and DevOps to GenAI, cloud architecture, and system design.
 
-This project serves as a living archive of practical knowledge, hands-on projects, and experimental ideas I explore as I grow in my career. It’s not just code — it’s a reflection of consistent learning from diverse sources including AI tools (like ChatGPT & Copilot), online courses, YouTube tutorials, documentation, blogs, and communities like Stack Overflow.
+This project serves as a living archive🗃️ of practical knowledge, hands-on projects, and experimental ideas I explore as I grow in my career. It’s not just code — it’s a reflection of consistent learning📈 from diverse sources including AI tools (like ChatGPT & Copilot), online courses, YouTube tutorials, documentation, blogs, and communities like Stack Overflow.
 
 I’ll continue updating this repository with new concepts, patterns, tools, and use cases as I expand my skills. Whether it’s a new backend pattern, an AI agent use case, or a deep dive into Kubernetes internals — Brain Stack will keep evolving alongside my career.
 
