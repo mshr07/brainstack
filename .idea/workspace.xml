@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="9c8c262b-78ca-41ae-8e58-2962f342643c" name="Changes" comment="Deleting Unwanted Files" />
+    <list default="true" id="9c8c262b-78ca-41ae-8e58-2962f342643c" name="Changes" comment="System Design Practice Codes" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -57,11 +57,20 @@
       <option name="project" value="LOCAL" />
       <updated>1753683309081</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="System Design Practice Codes">
+      <option name="closed" value="true" />
+      <created>1753687789572</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1753687789572</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Deleting Unwanted Files" />
-    <option name="LAST_COMMIT_MESSAGE" value="Deleting Unwanted Files" />
+    <MESSAGE value="System Design Practice Codes" />
+    <option name="LAST_COMMIT_MESSAGE" value="System Design Practice Codes" />
   </component>
 </project>
