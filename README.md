@@ -4,7 +4,7 @@ A personal archive of my learning and development journey across software engine
 ## 📒 My Tech Stack:
 </> **Languages:** Java, Python, JavaScript (ES6+), TypeScript, SQL, Shell Script
 
-🛠️ **Frameworks & Libraries:** Spring Boot, FastAPI, React.js, Express.js, Hibernate, Tailwind CSS
+🛠️ **Frameworks & Libraries:** Spring, Spring Boot, FastAPI, React.js, Express.js, Hibernate, Tailwind CSS, TensorFlow, Scikit-learn, Torch, transformers, 
 
 🌐 **Web Technologies:** HTML5, CSS3, REST APIs, WebSockets
 
