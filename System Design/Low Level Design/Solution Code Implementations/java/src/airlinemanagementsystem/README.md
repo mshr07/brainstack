@@ -30,12 +30,6 @@ Design and implement an Airline Management System that allows users to book flig
 
 ---
 
-## Class Design
-
-## UML Class Diagram
-
-![](../../../../uml-diagrams/class-diagrams/airlinemanagementsystem-class-diagram.png)
-
 ### 1. AirlineManagementSystem
 
 - **Fields:** List<Flight> flights, List<Booking> bookings, List<Passenger> passengers, PaymentProcessor paymentProcessor
