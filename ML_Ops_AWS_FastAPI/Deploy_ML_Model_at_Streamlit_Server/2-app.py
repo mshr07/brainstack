@@ -1,5 +1,4 @@
-## ML Model Deployment at Streamlit Server
-# Full Streamlit Code Repository: https://github.com/laxmimerit/streamlit-tutorials
+
 
 # streamlit run 2-app.py
 

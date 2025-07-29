@@ -1,6 +1,4 @@
-## Streamlit Application Basics
-# Full Streamlit Code Repository: https://github.com/laxmimerit/streamlit-tutorials
-# Complete Streamlit YouTube Playlist: https://www.youtube.com/playlist?list=PLc2rvfiptPSSpZ99EnJbH5LjTJ_nOoSWW
+
 
 # streamlit run 1-streamlit_introduction.py
 # python -m streamlit run 1-streamlit_introduction.py
