@@ -1,0 +1,7 @@
+com/example/FullStack/service/RecipeLoaderService.class
+com/example/FullStack/repo/RecipeRepo.class
+com/example/FullStack/controller/RecipeController.class
+com/example/FullStack/GlobalExceptionHandler.class
+com/example/FullStack/FullStackApplication.class
+com/example/FullStack/model/Recipe.class
+com/example/FullStack/service/RecipeService.class
