@@ -417,6 +417,6 @@ Feel free to add more examples or improve existing ones:
 - [Best Practices Guide](https://playwright.dev/docs/best-practices)
 - [Community Examples](https://github.com/microsoft/playwright)
 
-## 🏷️ Tags
+## Tags
 
 `#playwright` `#testing` `#automation` `#javascript` `#e2e-testing` `#web-testing` `#api-testing`
