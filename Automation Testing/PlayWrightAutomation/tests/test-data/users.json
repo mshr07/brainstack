@@ -1,0 +1,72 @@
+[
+  {
+    "id": 1,
+    "username": "tomsmith",
+    "password": "SuperSecretPassword!",
+    "fullName": "Tom Smith",
+    "email": "tom@example.com",
+    "role": "admin",
+    "department": "IT",
+    "status": "active",
+    "expectedResult": "success",
+    "permissions": ["read", "write", "delete", "admin"],
+    "loginAttempts": 0,
+    "lastLogin": "2024-01-15T10:30:00Z"
+  },
+  {
+    "id": 2,
+    "username": "invaliduser",
+    "password": "wrongpassword",
+    "fullName": "Invalid User",
+    "email": "invalid@example.com",
+    "role": "user",
+    "department": "Sales",
+    "status": "inactive",
+    "expectedResult": "failure",
+    "permissions": ["read"],
+    "loginAttempts": 5,
+    "lastLogin": null
+  },
+  {
+    "id": 3,
+    "username": "testuser",
+    "password": "TestPass123",
+    "fullName": "Test User",
+    "email": "test@example.com",
+    "role": "user",
+    "department": "Marketing",
+    "status": "pending",
+    "expectedResult": "failure",
+    "permissions": ["read"],
+    "loginAttempts": 2,
+    "lastLogin": "2024-01-10T14:25:00Z"
+  },
+  {
+    "id": 4,
+    "username": "poweruser",
+    "password": "Power123!",
+    "fullName": "Power User",
+    "email": "power@example.com",
+    "role": "poweruser",
+    "department": "Operations",
+    "status": "active",
+    "expectedResult": "success",
+    "permissions": ["read", "write", "execute"],
+    "loginAttempts": 0,
+    "lastLogin": "2024-01-14T09:15:00Z"
+  },
+  {
+    "id": 5,
+    "username": "guestuser",
+    "password": "Guest123",
+    "fullName": "Guest User",
+    "email": "guest@example.com",
+    "role": "guest",
+    "department": "External",
+    "status": "limited",
+    "expectedResult": "limited_access",
+    "permissions": ["read"],
+    "loginAttempts": 1,
+    "lastLogin": "2024-01-12T16:45:00Z"
+  }
+]

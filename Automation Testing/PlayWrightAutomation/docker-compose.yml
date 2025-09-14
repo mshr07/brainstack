@@ -1,0 +1,205 @@
+version: '3.8'
+
+services:
+  # Playwright Test Runner
+  playwright-tests:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: playwright-tests
+    environment:
+      - NODE_ENV=test
+      - CI=true
+      - BASE_URL=https://the-internet.herokuapp.com
+      - BROWSER=${BROWSER:-chromium}
+      - HEADLESS=${HEADLESS:-true}
+    volumes:
+      # Mount test results to host
+      - ./test-results:/app/test-results
+      - ./playwright-report:/app/playwright-report
+      # Mount source code for development (optional)
+      - ./tests:/app/tests:ro
+      - ./playwright.config.js:/app/playwright.config.js:ro
+    networks:
+      - test-network
+    depends_on:
+      - selenium-hub
+    command: >
+      sh -c "
+        echo 'Starting Playwright tests...' &&
+        npx playwright test 
+          --project=$${BROWSER:-chromium} 
+          --reporter=html,junit,allure-playwright
+          ${HEADED:+--headed}
+      "
+
+  # Selenium Grid Hub (for additional browser testing)
+  selenium-hub:
+    image: selenium/hub:4.15.0-20231025
+    container_name: selenium-hub
+    ports:
+      - "4444:4444"
+      - "4442:4442"
+      - "4443:4443"
+    environment:
+      - SE_EVENT_BUS_HOST=selenium-hub
+      - SE_EVENT_BUS_PUBLISH_PORT=4442
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4444/wd/hub/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Chrome Node
+  selenium-chrome:
+    image: selenium/node-chrome:4.15.0-20231025
+    container_name: selenium-chrome
+    depends_on:
+      - selenium-hub
+    environment:
+      - SE_EVENT_BUS_HOST=selenium-hub
+      - SE_EVENT_BUS_PUBLISH_PORT=4442
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+      - SE_NODE_MAX_SESSIONS=3
+    volumes:
+      - /dev/shm:/dev/shm
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://selenium-hub:4444/wd/hub/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Firefox Node
+  selenium-firefox:
+    image: selenium/node-firefox:4.15.0-20231025
+    container_name: selenium-firefox
+    depends_on:
+      - selenium-hub
+    environment:
+      - SE_EVENT_BUS_HOST=selenium-hub
+      - SE_EVENT_BUS_PUBLISH_PORT=4442
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+      - SE_NODE_MAX_SESSIONS=3
+    volumes:
+      - /dev/shm:/dev/shm
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://selenium-hub:4444/wd/hub/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Mock API Server for testing
+  mock-api:
+    image: mockoon/cli:latest
+    container_name: mock-api-server
+    ports:
+      - "3001:3001"
+    command: >
+      sh -c "
+        echo '{
+          \"uuid\": \"mock-api\",
+          \"lastMigration\": 19,
+          \"name\": \"Mock API\",
+          \"endpointPrefix\": \"\",
+          \"latency\": 0,
+          \"port\": 3001,
+          \"hostname\": \"0.0.0.0\",
+          \"routes\": [
+            {
+              \"uuid\": \"route1\",
+              \"documentation\": \"Test endpoint\",
+              \"method\": \"get\",
+              \"endpoint\": \"api/test\",
+              \"responses\": [
+                {
+                  \"uuid\": \"response1\",
+                  \"body\": \"{\\\"message\\\": \\\"Hello from Mock API\\\"}\",
+                  \"latency\": 0,
+                  \"statusCode\": 200,
+                  \"headers\": [{\"key\": \"Content-Type\", \"value\": \"application/json\"}]
+                }
+              ]
+            }
+          ]
+        }' > /tmp/mock-config.json &&
+        mockoon-cli start --data /tmp/mock-config.json
+      "
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3001/api/test"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Allure Report Server
+  allure-server:
+    image: frankescobar/allure-docker-service:2.22.1
+    container_name: allure-server
+    ports:
+      - "5050:5050"
+    environment:
+      CHECK_RESULTS_EVERY_SECONDS: 1
+      KEEP_HISTORY: 1
+      KEEP_HISTORY_LATEST: 25
+    volumes:
+      - ./test-results/allure-results:/app/allure-results
+      - ./test-results/allure-reports:/app/default-reports
+    networks:
+      - test-network
+    depends_on:
+      - playwright-tests
+
+  # Test Database (PostgreSQL for integration tests)
+  test-db:
+    image: postgres:15-alpine
+    container_name: test-database
+    environment:
+      POSTGRES_DB: testdb
+      POSTGRES_USER: testuser
+      POSTGRES_PASSWORD: testpass123
+    ports:
+      - "5432:5432"
+    volumes:
+      - test-db-data:/var/lib/postgresql/data
+      - ./database/init-scripts:/docker-entrypoint-initdb.d:ro
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U testuser -d testdb"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis for caching tests
+  test-redis:
+    image: redis:7-alpine
+    container_name: test-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --requirepass testpass123
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  test-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  test-db-data:
+    driver: local

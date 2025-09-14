@@ -1,0 +1,270 @@
+# Bitbucket Pipelines configuration for Playwright tests
+# Alternative to Jenkins - runs directly in Bitbucket Cloud
+
+image: node:18
+
+definitions:
+  caches:
+    playwright-browsers: ~/.cache/ms-playwright
+    
+  services:
+    docker:
+      memory: 2048
+      
+  steps:
+    - step: &install-dependencies
+        name: 📦 Install Dependencies
+        caches:
+          - node
+          - playwright-browsers
+        script:
+          - echo "🚀 Installing Node.js dependencies..."
+          - npm ci --prefer-offline --no-audit
+          - echo "🌐 Installing Playwright browsers..."
+          - npx playwright install --with-deps chromium firefox webkit
+          - echo "✅ Dependencies installed successfully"
+        artifacts:
+          - node_modules/**
+          
+    - step: &run-tests
+        name: 🧪 Run Playwright Tests
+        caches:
+          - node
+          - playwright-browsers
+        script:
+          - echo "🎭 Starting Playwright test execution..."
+          - echo "Environment: ${BITBUCKET_DEPLOYMENT_ENVIRONMENT:-development}"
+          - echo "Branch: ${BITBUCKET_BRANCH}"
+          - echo "Commit: ${BITBUCKET_COMMIT}"
+          
+          # Set environment variables
+          - export CI=true
+          - export NODE_ENV=test
+          
+          # Run tests based on branch
+          - |
+            if [[ "${BITBUCKET_BRANCH}" == "main" || "${BITBUCKET_BRANCH}" == "master" ]]; then
+              echo "🚀 Running full test suite on main branch"
+              npx playwright test --reporter=html,junit,allure-playwright
+            elif [[ "${BITBUCKET_BRANCH}" == "develop" ]]; then
+              echo "🔄 Running regression tests on develop branch"
+              npx playwright test --grep @regression --reporter=html,junit,allure-playwright
+            else
+              echo "🚀 Running smoke tests on feature branch"
+              npx playwright test --grep @smoke --reporter=html,junit,allure-playwright
+            fi
+        artifacts:
+          - test-results/**
+          - playwright-report/**
+          - screenshots/**
+          
+    - step: &generate-reports
+        name: 📊 Generate Reports
+        script:
+          - echo "📈 Generating Allure reports..."
+          - |
+            if [ -d "test-results/allure-results" ] && [ "$(ls -A test-results/allure-results)" ]; then
+              npx allure generate test-results/allure-results --clean -o test-results/allure-report
+              echo "✅ Allure report generated successfully"
+            else
+              echo "⚠️ No Allure results found"
+            fi
+          
+          # Generate test summary
+          - echo "📝 Creating test summary..."
+          - |
+            {
+              echo "======================================"
+              echo "Playwright Test Summary"
+              echo "======================================"
+              echo "Pipeline: ${BITBUCKET_BUILD_NUMBER}"
+              echo "Branch: ${BITBUCKET_BRANCH}"
+              echo "Commit: ${BITBUCKET_COMMIT}"
+              echo "Date: $(date)"
+              echo "======================================"
+              
+              if [ -f "test-results/results.json" ]; then
+                echo "Test Results Available"
+              else
+                echo "No detailed results found"
+              fi
+              
+              echo "======================================"
+            } > test-summary.txt
+        artifacts:
+          - test-results/allure-report/**
+          - test-summary.txt
+
+pipelines:
+  # Default pipeline for all branches
+  default:
+    - step: *install-dependencies
+    - step: *run-tests
+    - step: *generate-reports
+
+  # Main/Master branch pipeline
+  branches:
+    main:
+      - step: *install-dependencies
+      - parallel:
+          - step:
+              name: 🟢 Chrome Tests
+              caches:
+                - node
+                - playwright-browsers
+              script:
+                - echo "🟢 Running Chrome tests"
+                - npx playwright test --project=chromium --reporter=html,junit,allure-playwright
+              artifacts:
+                - test-results/**
+                - playwright-report/**
+                
+          - step:
+              name: 🟠 Firefox Tests
+              caches:
+                - node
+                - playwright-browsers
+              script:
+                - echo "🟠 Running Firefox tests"
+                - npx playwright test --project=firefox --reporter=html,junit,allure-playwright
+              artifacts:
+                - test-results/**
+                - playwright-report/**
+                
+          - step:
+              name: 🔵 Safari Tests
+              caches:
+                - node
+                - playwright-browsers
+              script:
+                - echo "🔵 Running Safari tests"
+                - npx playwright test --project=webkit --reporter=html,junit,allure-playwright
+              artifacts:
+                - test-results/**
+                - playwright-report/**
+      - step: *generate-reports
+      
+    master:
+      - step: *install-dependencies
+      - step: *run-tests
+      - step: *generate-reports
+
+    # Development branch
+    develop:
+      - step: *install-dependencies
+      - step:
+          name: 🔄 Regression Tests
+          caches:
+            - node
+            - playwright-browsers
+          script:
+            - echo "🔄 Running regression test suite"
+            - npx playwright test --grep @regression --reporter=html,junit,allure-playwright
+          artifacts:
+            - test-results/**
+            - playwright-report/**
+      - step: *generate-reports
+
+  # Pull requests
+  pull-requests:
+    '**':
+      - step: *install-dependencies
+      - step:
+          name: 🚀 PR Smoke Tests
+          caches:
+            - node
+            - playwright-browsers
+          script:
+            - echo "🚀 Running smoke tests for pull request"
+            - echo "PR Source: ${BITBUCKET_PR_DESTINATION_BRANCH} ← ${BITBUCKET_BRANCH}"
+            - npx playwright test --grep @smoke --reporter=html,junit,allure-playwright
+          artifacts:
+            - test-results/**
+            - playwright-report/**
+      - step: *generate-reports
+
+  # Tags (releases)
+  tags:
+    'v*':
+      - step: *install-dependencies
+      - step:
+          name: 🏷️ Release Tests
+          caches:
+            - node
+            - playwright-browsers
+          script:
+            - echo "🏷️ Running full test suite for release ${BITBUCKET_TAG}"
+            - npx playwright test --reporter=html,junit,allure-playwright
+          artifacts:
+            - test-results/**
+            - playwright-report/**
+      - step: *generate-reports
+      - step:
+          name: 🚀 Deploy to Production
+          deployment: production
+          trigger: manual
+          script:
+            - echo "🚀 Deploying to production after successful tests"
+            - echo "Release version: ${BITBUCKET_TAG}"
+            # Add your deployment commands here
+            
+  # Custom pipeline for manual execution
+  custom:
+    full-test-suite:
+      - step: *install-dependencies
+      - parallel:
+          - step:
+              name: 🟢 Chrome Full Tests
+              caches:
+                - node
+                - playwright-browsers
+              script:
+                - npx playwright test --project=chromium --reporter=html,junit,allure-playwright
+              artifacts:
+                - test-results/**
+                
+          - step:
+              name: 🟠 Firefox Full Tests
+              caches:
+                - node
+                - playwright-browsers
+              script:
+                - npx playwright test --project=firefox --reporter=html,junit,allure-playwright
+              artifacts:
+                - test-results/**
+                
+          - step:
+              name: 🔵 Safari Full Tests
+              caches:
+                - node
+                - playwright-browsers
+              script:
+                - npx playwright test --project=webkit --reporter=html,junit,allure-playwright
+              artifacts:
+                - test-results/**
+                
+          - step:
+              name: 📱 Mobile Tests
+              caches:
+                - node
+                - playwright-browsers
+              script:
+                - npx playwright test --project="Mobile Chrome" --project="Mobile Safari" --reporter=html,junit,allure-playwright
+              artifacts:
+                - test-results/**
+      - step: *generate-reports
+      
+    api-tests-only:
+      - step: *install-dependencies
+      - step:
+          name: 🔗 API Tests Only
+          caches:
+            - node
+            - playwright-browsers
+          script:
+            - echo "🔗 Running API tests only"
+            - npx playwright test api-*.spec.js --reporter=html,junit,allure-playwright
+          artifacts:
+            - test-results/**
+            - playwright-report/**
+      - step: *generate-reports

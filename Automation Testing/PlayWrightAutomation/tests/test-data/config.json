@@ -1,0 +1,153 @@
+{
+  "project": {
+    "name": "Playwright Automation Suite",
+    "version": "1.0.0",
+    "description": "Comprehensive Playwright testing framework"
+  },
+  "baseUrl": "https://the-internet.herokuapp.com",
+  "timeout": {
+    "default": 30000,
+    "navigation": 60000,
+    "action": 15000,
+    "expect": 10000
+  },
+  "retries": {
+    "default": 2,
+    "ci": 3,
+    "local": 1
+  },
+  "browsers": [
+    {
+      "name": "chrome",
+      "headless": true,
+      "viewport": { "width": 1920, "height": 1080 }
+    },
+    {
+      "name": "firefox", 
+      "headless": true,
+      "viewport": { "width": 1920, "height": 1080 }
+    },
+    {
+      "name": "safari",
+      "headless": true,
+      "viewport": { "width": 1440, "height": 900 }
+    }
+  ],
+  "environments": {
+    "dev": {
+      "url": "https://dev.example.com",
+      "apiUrl": "https://api-dev.example.com",
+      "database": {
+        "host": "dev-db.example.com",
+        "port": 5432,
+        "name": "testdb_dev"
+      },
+      "credentials": {
+        "adminUser": "dev_admin",
+        "testUser": "dev_test"
+      },
+      "features": {
+        "enableLogging": true,
+        "mockServices": true,
+        "debugMode": true
+      }
+    },
+    "staging": {
+      "url": "https://staging.example.com",
+      "apiUrl": "https://api-staging.example.com",
+      "database": {
+        "host": "staging-db.example.com",
+        "port": 5432,
+        "name": "testdb_staging"
+      },
+      "credentials": {
+        "adminUser": "staging_admin",
+        "testUser": "staging_test"
+      },
+      "features": {
+        "enableLogging": true,
+        "mockServices": false,
+        "debugMode": false
+      }
+    },
+    "prod": {
+      "url": "https://example.com",
+      "apiUrl": "https://api.example.com",
+      "database": {
+        "host": "prod-db.example.com",
+        "port": 5432,
+        "name": "proddb"
+      },
+      "credentials": {
+        "adminUser": "prod_admin",
+        "testUser": "prod_test"
+      },
+      "features": {
+        "enableLogging": false,
+        "mockServices": false,
+        "debugMode": false
+      }
+    }
+  },
+  "testData": {
+    "paths": {
+      "users": "./test-data/users.json",
+      "forms": "./test-data/form-data.json",
+      "products": "./test-data/products.json"
+    },
+    "generators": {
+      "enableDynamicData": true,
+      "faker": {
+        "locale": "en",
+        "seed": 12345
+      }
+    }
+  },
+  "reporting": {
+    "html": {
+      "enabled": true,
+      "outputDir": "./test-results/html"
+    },
+    "json": {
+      "enabled": true,
+      "outputFile": "./test-results/results.json"
+    },
+    "junit": {
+      "enabled": true,
+      "outputFile": "./test-results/junit.xml"
+    },
+    "allure": {
+      "enabled": true,
+      "outputDir": "./test-results/allure-results",
+      "reportDir": "./test-results/allure-report"
+    },
+    "screenshots": {
+      "mode": "only-on-failure",
+      "fullPage": true,
+      "quality": 90
+    },
+    "videos": {
+      "mode": "retain-on-failure",
+      "size": { "width": 1280, "height": 720 }
+    }
+  },
+  "parallel": {
+    "workers": "auto",
+    "maxWorkers": 4,
+    "fullyParallel": true
+  },
+  "network": {
+    "ignoreHTTPSErrors": true,
+    "offline": false,
+    "throttling": {
+      "downloadThroughput": 1500000,
+      "uploadThroughput": 750000,
+      "latency": 20
+    }
+  },
+  "security": {
+    "acceptDownloads": true,
+    "permissions": ["clipboard-read", "clipboard-write"],
+    "geolocation": { "latitude": 37.7749, "longitude": -122.4194 }
+  }
+}

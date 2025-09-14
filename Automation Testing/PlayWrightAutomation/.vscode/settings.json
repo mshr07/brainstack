@@ -1,0 +1,34 @@
+{
+  "playwright.reuseBrowser": false,
+  "playwright.headless": false,
+  "playwright.showTrace": false,
+  "typescript.preferences.importModuleSpecifier": "relative",
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": true
+  },
+  "files.associations": {
+    "*.spec.js": "javascript",
+    "*.test.js": "javascript",
+    "*.config.js": "javascript"
+  },
+  "emmet.includeLanguages": {
+    "javascript": "html"
+  },
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "search.exclude": {
+    "test-results/**": true,
+    "playwright-report/**": true,
+    "node_modules/**": true,
+    "*.log": true
+  },
+  "files.watcherExclude": {
+    "**/test-results/**": true,
+    "**/playwright-report/**": true,
+    "**/node_modules/**": true
+  }
+}

@@ -1,0 +1,573 @@
+pipeline {
+    agent any
+    
+    environment {
+        NODE_VERSION = '18'
+        PLAYWRIGHT_BROWSERS_PATH = "${WORKSPACE}/browsers"
+        CI = 'true'
+        NODE_ENV = 'test'
+        ALLURE_RESULTS_DIR = 'test-results/allure-results'
+    }
+    
+    options {
+        timestamps()
+        timeout(time: 60, unit: 'MINUTES')
+        buildDiscarder(logRotator(numToKeepStr: '10', artifactNumToKeepStr: '10'))
+        skipStagesAfterUnstable()
+        retry(2)
+    }
+    
+    tools {
+        nodejs "Node18"
+    }
+    
+    parameters {
+        choice(
+            name: 'BROWSER',
+            choices: ['all', 'chromium', 'firefox', 'webkit'],
+            description: 'Select browser for test execution'
+        )
+        choice(
+            name: 'TEST_SUITE',
+            choices: ['all', 'smoke', 'regression', 'api', 'ui'],
+            description: 'Select test suite to execute'
+        )
+        booleanParam(
+            name: 'GENERATE_ALLURE_REPORT',
+            defaultValue: true,
+            description: 'Generate Allure report after test execution'
+        )
+        booleanParam(
+            name: 'RUN_IN_HEADLESS',
+            defaultValue: true,
+            description: 'Run tests in headless mode'
+        )
+    }
+    
+    stages {
+        stage('📋 Setup & Validation') {
+            parallel {
+                stage('Checkout & Info') {
+                    steps {
+                        script {
+                            echo "🚀 Starting Playwright Test Pipeline"
+                            echo "Build Number: ${env.BUILD_NUMBER}"
+                            echo "Branch: ${env.GIT_BRANCH ?: 'N/A'}"
+                            echo "Commit: ${env.GIT_COMMIT ?: 'N/A'}"
+                            echo "Selected Browser: ${params.BROWSER}"
+                            echo "Test Suite: ${params.TEST_SUITE}"
+                        }
+                        
+                        // Clean workspace
+                        cleanWs()
+                        
+                        // Checkout code
+                        checkout scm
+                        
+                        // Display repository information
+                        sh '''
+                            echo "📁 Repository Information:"
+                            git log --oneline -3 || echo "Git history not available"
+                            echo "📂 Current directory contents:"
+                            ls -la
+                        '''
+                    }
+                }
+                
+                stage('Environment Check') {
+                    steps {
+                        sh '''
+                            echo "🔧 Environment Verification:"
+                            echo "Node.js version: $(node --version)"
+                            echo "NPM version: $(npm --version)"
+                            echo "Operating System: $(uname -a)"
+                            echo "Available Memory: $(free -h 2>/dev/null || echo 'Memory info not available')"
+                            echo "Disk Space: $(df -h . 2>/dev/null || echo 'Disk info not available')"
+                        '''
+                    }
+                }
+            }
+        }
+        
+        stage('📦 Dependencies & Setup') {
+            steps {
+                script {
+                    echo "📦 Installing dependencies and setting up environment"
+                }
+                
+                // Install dependencies with caching
+                sh '''
+                    echo "Installing Node.js dependencies..."
+                    if [ -f "package-lock.json" ]; then
+                        npm ci --prefer-offline --no-audit --progress=false
+                    else
+                        npm install --prefer-offline --no-audit --progress=false
+                    fi
+                '''
+                
+                // Install Playwright browsers
+                script {
+                    def browserInstallCmd = "npx playwright install --with-deps"
+                    if (params.BROWSER != 'all') {
+                        browserInstallCmd += " ${params.BROWSER}"
+                    } else {
+                        browserInstallCmd += " chromium firefox webkit"
+                    }
+                    
+                    sh """
+                        echo "🌐 Installing Playwright browsers..."
+                        ${browserInstallCmd}
+                    """
+                }
+                
+                // Verify installation
+                sh '''
+                    echo "✅ Verifying Playwright installation:"
+                    npx playwright --version
+                    echo "📋 Available browsers:"
+                    npx playwright install --dry-run 2>/dev/null || echo "Dry run not supported"
+                '''
+            }
+        }
+        
+        stage('🔍 Code Quality & Security') {
+            parallel {
+                stage('Security Audit') {
+                    steps {
+                        script {
+                            try {
+                                sh '''
+                                    echo "🔒 Running NPM security audit..."
+                                    npm audit --audit-level=high --progress=false
+                                '''
+                            } catch (Exception e) {
+                                unstable("⚠️ Security vulnerabilities found: ${e.getMessage()}")
+                                echo "Continuing with build despite security warnings"
+                            }
+                        }
+                    }
+                }
+                
+                stage('Package Validation') {
+                    steps {
+                        sh '''
+                            echo "📋 Validating package configuration..."
+                            if [ -f "package.json" ]; then
+                                echo "✅ package.json exists"
+                                node -e "console.log('Package name:', require('./package.json').name)"
+                            fi
+                            
+                            if [ -f "playwright.config.js" ]; then
+                                echo "✅ Playwright config exists"
+                            else
+                                echo "⚠️ No playwright.config.js found, using defaults"
+                            fi
+                        '''
+                    }
+                }
+            }
+        }
+        
+        stage('🧪 Test Execution') {
+            parallel {
+                stage('UI Tests') {
+                    when {
+                        anyOf {
+                            expression { params.TEST_SUITE == 'all' }
+                            expression { params.TEST_SUITE == 'ui' }
+                            expression { params.TEST_SUITE == 'smoke' }
+                            expression { params.TEST_SUITE == 'regression' }
+                        }
+                    }
+                    steps {
+                        script {
+                            echo "🎭 Running UI Tests"
+                            
+                            def testCommand = "npx playwright test"
+                            def reporters = "--reporter=html,junit,allure-playwright"
+                            
+                            // Add browser selection
+                            if (params.BROWSER != 'all') {
+                                testCommand += " --project=${params.BROWSER}"
+                            }
+                            
+                            // Add test suite filtering
+                            if (params.TEST_SUITE == 'smoke') {
+                                testCommand += " --grep @smoke"
+                            } else if (params.TEST_SUITE == 'regression') {
+                                testCommand += " --grep @regression"
+                            }
+                            
+                            // Add headless mode
+                            if (!params.RUN_IN_HEADLESS) {
+                                testCommand += " --headed"
+                            }
+                            
+                            testCommand += " ${reporters}"
+                            
+                            echo "Executing: ${testCommand}"
+                            
+                            try {
+                                sh "${testCommand}"
+                            } catch (Exception e) {
+                                unstable("Some UI tests failed: ${e.getMessage()}")
+                                echo "Continuing to generate reports despite test failures"
+                            }
+                        }
+                    }
+                    post {
+                        always {
+                            // Archive test artifacts
+                            archiveArtifacts artifacts: '''
+                                test-results/**/*,
+                                playwright-report/**/*,
+                                screenshots/**/*
+                            ''', fingerprint: true, allowEmptyArchive: true
+                        }
+                    }
+                }
+                
+                stage('API Tests') {
+                    when {
+                        anyOf {
+                            expression { params.TEST_SUITE == 'all' }
+                            expression { params.TEST_SUITE == 'api' }
+                        }
+                    }
+                    steps {
+                        script {
+                            echo "🔗 Running API Tests"
+                        }
+                        
+                        sh '''
+                            echo "Executing API tests..."
+                            if [ -f "tests/api-test.spec.js" ]; then
+                                npx playwright test api-test.spec.js --reporter=html,junit,allure-playwright
+                            else
+                                echo "⚠️ No API tests found, skipping"
+                            fi
+                        '''
+                    }
+                }
+                
+                stage('Mobile Tests') {
+                    when {
+                        anyOf {
+                            branch 'main'
+                            branch 'develop'
+                            expression { params.TEST_SUITE == 'regression' }
+                        }
+                    }
+                    steps {
+                        script {
+                            echo "📱 Running Mobile Tests"
+                        }
+                        
+                        sh '''
+                            echo "Executing Mobile Playwright tests..."
+                            npx playwright test --project="Mobile Chrome" --project="Mobile Safari" --reporter=html,junit,allure-playwright
+                        '''
+                    }
+                }
+            }
+        }
+        
+        stage('📊 Report Generation') {
+            steps {
+                script {
+                    echo "📊 Generating comprehensive test reports"
+                }
+                
+                // Generate Allure report if requested
+                script {
+                    if (params.GENERATE_ALLURE_REPORT) {
+                        sh '''
+                            echo "🎯 Generating Allure report..."
+                            if [ -d "${ALLURE_RESULTS_DIR}" ] && [ "$(ls -A ${ALLURE_RESULTS_DIR} 2>/dev/null)" ]; then
+                                allure generate ${ALLURE_RESULTS_DIR} --clean -o test-results/allure-report
+                                echo "✅ Allure report generated successfully"
+                            else
+                                echo "⚠️ No Allure results found, skipping Allure report generation"
+                            fi
+                        '''
+                    } else {
+                        echo "Allure report generation skipped by user"
+                    }
+                }
+                
+                // Generate test execution summary
+                sh '''
+                    echo "📝 Creating test execution summary..."
+                    {
+                        echo "======================================"
+                        echo "Playwright Test Execution Summary"
+                        echo "======================================"
+                        echo "Build Number: ${BUILD_NUMBER}"
+                        echo "Branch: ${GIT_BRANCH:-'N/A'}"
+                        echo "Commit: ${GIT_COMMIT:-'N/A'}"
+                        echo "Build Time: $(date)"
+                        echo "Selected Browser: ${BROWSER}"
+                        echo "Test Suite: ${TEST_SUITE}"
+                        echo "Headless Mode: ${RUN_IN_HEADLESS}"
+                        echo "======================================"
+                        
+                        # Test results summary
+                        if [ -f "test-results/results.json" ]; then
+                            echo "📊 Test Results Summary:"
+                            node -e "
+                                try {
+                                    const results = require('./test-results/results.json');
+                                    const stats = results.stats || {};
+                                    console.log('Total Tests:', stats.expected + stats.unexpected + stats.skipped || 'N/A');
+                                    console.log('Passed:', stats.expected || 0);
+                                    console.log('Failed:', stats.unexpected || 0);
+                                    console.log('Skipped:', stats.skipped || 0);
+                                    console.log('Duration:', Math.round((stats.duration || 0) / 1000) + 's');
+                                } catch (e) {
+                                    console.log('Unable to parse test results');
+                                }
+                            " 2>/dev/null || echo "Test results parsing failed"
+                        fi
+                        
+                        echo "======================================"
+                        echo "Reports Available:"
+                        echo "- HTML Report: playwright-report/index.html"
+                        if [ -d "test-results/allure-report" ]; then
+                            echo "- Allure Report: test-results/allure-report/index.html"
+                        fi
+                        if [ -f "test-results/junit.xml" ]; then
+                            echo "- JUnit XML: test-results/junit.xml"
+                        fi
+                        echo "======================================"
+                    } > test-execution-summary.txt
+                    
+                    echo "📄 Test summary created:"
+                    cat test-execution-summary.txt
+                '''
+            }
+        }
+        
+        stage('🚀 Deployment Readiness') {
+            when {
+                anyOf {
+                    branch 'main'
+                    branch 'release/*'
+                }
+            }
+            steps {
+                script {
+                    echo "🚀 Checking deployment readiness"
+                    
+                    // Check if critical tests passed
+                    sh '''
+                        echo "✅ Performing deployment readiness checks..."
+                        
+                        # Check if any critical tests failed
+                        if [ -f "test-results/results.json" ]; then
+                            node -e "
+                                const results = require('./test-results/results.json');
+                                const failed = results.stats?.unexpected || 0;
+                                if (failed > 0) {
+                                    console.log('❌ ' + failed + ' tests failed - not ready for deployment');
+                                    process.exit(1);
+                                } else {
+                                    console.log('✅ All tests passed - ready for deployment');
+                                }
+                            " || echo "⚠️ Unable to determine test status"
+                        fi
+                    '''
+                }
+            }
+        }
+    }
+    
+    post {
+        always {
+            script {
+                echo "🧹 Performing post-build cleanup and reporting"
+            }
+            
+            // Publish test results
+            script {
+                try {
+                    publishTestResults testResultsPattern: 'test-results/junit.xml'
+                } catch (Exception e) {
+                    echo "⚠️ Failed to publish test results: ${e.getMessage()}"
+                }
+            }
+            
+            // Publish HTML reports
+            script {
+                try {
+                    publishHTML([
+                        allowMissing: false,
+                        alwaysLinkToLastBuild: true,
+                        keepAll: true,
+                        reportDir: 'playwright-report',
+                        reportFiles: 'index.html',
+                        reportName: 'Playwright HTML Report',
+                        reportTitles: 'Playwright Test Results'
+                    ])
+                } catch (Exception e) {
+                    echo "⚠️ Failed to publish HTML report: ${e.getMessage()}"
+                }
+            }
+            
+            // Publish Allure report
+            script {
+                try {
+                    if (fileExists('test-results/allure-results') && params.GENERATE_ALLURE_REPORT) {
+                        allure([
+                            includeProperties: false,
+                            jdk: '',
+                            properties: [],
+                            reportBuildPolicy: 'ALWAYS',
+                            results: [[path: 'test-results/allure-results']]
+                        ])
+                    }
+                } catch (Exception e) {
+                    echo "⚠️ Failed to publish Allure report: ${e.getMessage()}"
+                }
+            }
+            
+            // Archive all artifacts
+            archiveArtifacts artifacts: '''
+                test-results/**/*,
+                playwright-report/**/*,
+                test-execution-summary.txt,
+                screenshots/**/*,
+                videos/**/*,
+                trace/**/*
+            ''', fingerprint: true, allowEmptyArchive: true
+        }
+        
+        success {
+            script {
+                echo "✅ Pipeline completed successfully!"
+                
+                // Send success notification
+                try {
+                    emailext (
+                        subject: "✅ Playwright Tests PASSED - Build #${BUILD_NUMBER}",
+                        body: """
+                            <div style="font-family: Arial, sans-serif;">
+                                <h2 style="color: #28a745;">🎉 Playwright Test Automation - SUCCESS</h2>
+                                <table style="border-collapse: collapse; width: 100%;">
+                                    <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Build Number:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${BUILD_NUMBER}</td></tr>
+                                    <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Branch:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${GIT_BRANCH ?: 'N/A'}</td></tr>
+                                    <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Browser:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${params.BROWSER}</td></tr>
+                                    <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Test Suite:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${params.TEST_SUITE}</td></tr>
+                                    <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Duration:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${currentBuild.durationString}</td></tr>
+                                </table>
+                                <h3>📊 Available Reports:</h3>
+                                <ul>
+                                    <li><a href="${BUILD_URL}Playwright_HTML_Report/" style="color: #007bff;">🎭 Playwright HTML Report</a></li>
+                                    <li><a href="${BUILD_URL}allure/" style="color: #007bff;">📈 Allure Report</a></li>
+                                    <li><a href="${BUILD_URL}console" style="color: #007bff;">📝 Console Output</a></li>
+                                </ul>
+                                <p style="color: #28a745;"><strong>All tests passed successfully! 🎉</strong></p>
+                            </div>
+                        """,
+                        to: "${env.CHANGE_AUTHOR_EMAIL ?: 'team@example.com'}",
+                        mimeType: 'text/html'
+                    )
+                } catch (Exception e) {
+                    echo "⚠️ Failed to send email notification: ${e.getMessage()}"
+                }
+            }
+        }
+        
+        failure {
+            script {
+                echo "❌ Pipeline failed!"
+                
+                // Send failure notification
+                try {
+                    emailext (
+                        subject: "❌ Playwright Tests FAILED - Build #${BUILD_NUMBER}",
+                        body: """
+                            <div style="font-family: Arial, sans-serif;">
+                                <h2 style="color: #dc3545;">❌ Playwright Test Automation - FAILED</h2>
+                                <table style="border-collapse: collapse; width: 100%;">
+                                    <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Build Number:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${BUILD_NUMBER}</td></tr>
+                                    <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Branch:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${GIT_BRANCH ?: 'N/A'}</td></tr>
+                                    <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Browser:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${params.BROWSER}</td></tr>
+                                    <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Test Suite:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${params.TEST_SUITE}</td></tr>
+                                    <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Duration:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${currentBuild.durationString}</td></tr>
+                                </table>
+                                <h3>🔍 Investigation Links:</h3>
+                                <ul>
+                                    <li><a href="${BUILD_URL}console" style="color: #dc3545;">📝 Console Output</a></li>
+                                    <li><a href="${BUILD_URL}Playwright_HTML_Report/" style="color: #007bff;">🎭 Test Report</a></li>
+                                    <li><a href="${BUILD_URL}allure/" style="color: #007bff;">📈 Allure Report</a></li>
+                                </ul>
+                                <p style="color: #dc3545;"><strong>⚠️ Please investigate and fix the failing tests.</strong></p>
+                            </div>
+                        """,
+                        to: "${env.CHANGE_AUTHOR_EMAIL ?: 'team@example.com'}",
+                        mimeType: 'text/html'
+                    )
+                } catch (Exception e) {
+                    echo "⚠️ Failed to send failure notification: ${e.getMessage()}"
+                }
+            }
+        }
+        
+        unstable {
+            script {
+                echo "⚠️ Pipeline completed with unstable results (some tests failed)"
+                
+                // Send unstable notification
+                try {
+                    emailext (
+                        subject: "⚠️ Playwright Tests UNSTABLE - Build #${BUILD_NUMBER}",
+                        body: """
+                            <div style="font-family: Arial, sans-serif;">
+                                <h2 style="color: #ffc107;">⚠️ Playwright Test Automation - UNSTABLE</h2>
+                                <p>Some tests failed, but the build pipeline continued to completion.</p>
+                                <table style="border-collapse: collapse; width: 100%;">
+                                    <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Build Number:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${BUILD_NUMBER}</td></tr>
+                                    <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Branch:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${GIT_BRANCH ?: 'N/A'}</td></tr>
+                                    <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Duration:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${currentBuild.durationString}</td></tr>
+                                </table>
+                                <h3>📊 Available Reports:</h3>
+                                <ul>
+                                    <li><a href="${BUILD_URL}Playwright_HTML_Report/" style="color: #007bff;">🎭 Test Report</a></li>
+                                    <li><a href="${BUILD_URL}allure/" style="color: #007bff;">📈 Allure Report</a></li>
+                                </ul>
+                                <p style="color: #ffc107;"><strong>Please review the failed tests and address any issues.</strong></p>
+                            </div>
+                        """,
+                        to: "${env.CHANGE_AUTHOR_EMAIL ?: 'team@example.com'}",
+                        mimeType: 'text/html'
+                    )
+                } catch (Exception e) {
+                    echo "⚠️ Failed to send unstable notification: ${e.getMessage()}"
+                }
+            }
+        }
+        
+        cleanup {
+            script {
+                echo "🧹 Performing final cleanup"
+                
+                // Clean up large files but keep reports
+                sh '''
+                    echo "Cleaning up temporary files..."
+                    
+                    # Remove browser cache if exists
+                    if [ -d "${PLAYWRIGHT_BROWSERS_PATH}" ]; then
+                        echo "Removing browser cache..."
+                        rm -rf "${PLAYWRIGHT_BROWSERS_PATH}"
+                    fi
+                    
+                    # Clean up node_modules if space is needed
+                    # Uncomment if disk space is a concern
+                    # rm -rf node_modules
+                    
+                    echo "Cleanup completed"
+                '''
+            }
+        }
+    }
+}

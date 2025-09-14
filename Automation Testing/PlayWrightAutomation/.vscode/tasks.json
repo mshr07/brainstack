@@ -1,0 +1,155 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Run All Playwright Tests",
+      "type": "shell",
+      "command": "npx playwright test",
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Run Tests in Headed Mode",
+      "type": "shell",
+      "command": "npx playwright test --headed",
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Run Tests with UI Mode",
+      "type": "shell",
+      "command": "npx playwright test --ui",
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Run Tests in Debug Mode",
+      "type": "shell",
+      "command": "npx playwright test --debug",
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Run Chrome Tests Only",
+      "type": "shell",
+      "command": "npx playwright test --project=chromium",
+      "group": "test"
+    },
+    {
+      "label": "Run Firefox Tests Only",
+      "type": "shell",
+      "command": "npx playwright test --project=firefox",
+      "group": "test"
+    },
+    {
+      "label": "Run Safari Tests Only",
+      "type": "shell",
+      "command": "npx playwright test --project=webkit",
+      "group": "test"
+    },
+    {
+      "label": "Generate Code with Codegen",
+      "type": "shell",
+      "command": "npx playwright codegen https://the-internet.herokuapp.com",
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "new"
+      }
+    },
+    {
+      "label": "Show HTML Report",
+      "type": "shell",
+      "command": "npx playwright show-report",
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Generate Allure Report",
+      "type": "shell",
+      "command": "allure generate test-results/allure-results --clean -o test-results/allure-report",
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Open Allure Report",
+      "type": "shell",
+      "command": "allure open test-results/allure-report",
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Serve Allure Report",
+      "type": "shell",
+      "command": "allure serve test-results/allure-results",
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Install Playwright Browsers",
+      "type": "shell",
+      "command": "npx playwright install",
+      "group": "build"
+    },
+    {
+      "label": "Clean Test Results",
+      "type": "shell",
+      "command": "rm -rf test-results playwright-report",
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      }
+    }
+  ]
+}
