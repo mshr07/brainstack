@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Resume Analyzer</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="panel input-panel">
+        <div class="title-row">
+          <div>
+            <p class="eyebrow">AI Resume Analyzer</p>
+            <h1>Resume Match Workspace</h1>
+          </div>
+          <span id="apiStatus" class="status">Checking API</span>
+        </div>
+
+        <form id="analysisForm" class="form">
+          <label>
+            Resume file
+            <input id="resume" name="resume" type="file" accept=".pdf,.txt" required />
+          </label>
+
+          <label>
+            Job description
+            <textarea
+              id="jobDescription"
+              name="job_description"
+              rows="12"
+              placeholder="Paste the job description here..."
+              required
+            ></textarea>
+          </label>
+
+          <button id="analyzeButton" type="submit">Analyze Resume</button>
+        </form>
+      </section>
+
+      <section class="panel result-panel">
+        <div class="score-card">
+          <p class="label">Match Score</p>
+          <strong id="score">--</strong>
+          <span id="semantic">Semantic: --</span>
+        </div>
+
+        <div class="grid">
+          <article>
+            <h2>Matched Skills</h2>
+            <ul id="matchedSkills"></ul>
+          </article>
+          <article>
+            <h2>Missing Skills</h2>
+            <ul id="missingSkills"></ul>
+          </article>
+        </div>
+
+        <article>
+          <h2>Suggestions</h2>
+          <ul id="suggestions"></ul>
+        </article>
+
+        <article>
+          <h2>Previous Analyses</h2>
+          <div id="history" class="history"></div>
+        </article>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
+

@@ -1,0 +1,21 @@
+Alex Student
+Email: alex.student@example.com
+Phone: +1 555 123 4567
+
+Education
+Bachelor of Technology in Computer Science
+Coursework: Data Structures, Algorithms, Database Management Systems
+
+Skills
+Python, SQL, PostgreSQL, FastAPI, REST API, Git, Docker, Pandas, NumPy
+
+Projects
+AI Resume Analyzer
+- Built a FastAPI backend that accepts resumes and job descriptions.
+- Implemented PostgreSQL storage and a clean REST API.
+- Used Python text processing to extract skills and calculate match scores.
+
+Internship Experience
+- Developed automation scripts in Python and optimized SQL queries.
+- Collaborated with a team using Git and documented API endpoints.
+

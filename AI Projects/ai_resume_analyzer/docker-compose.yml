@@ -1,0 +1,29 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: ai_resume_analyzer_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ai_resume_analyzer
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgvector_data:/var/lib/postgresql/data
+
+  backend:
+    build: ./backend
+    container_name: ai_resume_analyzer_backend
+    depends_on:
+      - db
+    environment:
+      APP_ENV: development
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@db:5432/ai_resume_analyzer
+      CORS_ORIGINS: "*"
+      USE_TRANSFORMERS: "false"
+    ports:
+      - "8000:8000"
+
+volumes:
+  pgvector_data:
+
