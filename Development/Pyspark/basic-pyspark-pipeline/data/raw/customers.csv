@@ -1,0 +1,11 @@
+customer_id,name,email,age,city,signup_date,amount_spent
+1,Aarav Kumar,aarav@example.com,28,Hyderabad,2026-01-10,1200.50
+2,Isha Sharma,isha@example.com,31,Bengaluru,2026-01-12,850.00
+3,Ravi Reddy,bad-email,42,Chennai,2026-01-14,500.25
+,Missing Id,missing@example.com,25,Mumbai,2026-01-15,100.00
+5,Negative Age,negative@example.com,-4,Delhi,2026-01-16,90.00
+6,Bad Amount,badamount@example.com,22,Pune,2026-01-18,abc
+7,No Email,,37,Kolkata,2026-01-20,600.00
+8,Bad Date,baddate@example.com,44,Hyderabad,2026-99-99,450.00
+2,Isha Duplicate,isha.dup@example.com,31,Bengaluru,2026-01-12,850.00
+9,Maya Das,maya@example.com,29,Hyderabad,2026-01-22,1500.75

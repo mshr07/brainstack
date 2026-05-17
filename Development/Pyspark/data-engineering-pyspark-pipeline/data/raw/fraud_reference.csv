@@ -1,0 +1,6 @@
+reference_type,reference_value,risk_weight
+city,Delhi,15
+city,Mumbai,10
+email_domain,riskmail.biz,25
+payment_method,crypto,30
+customer_id,C0042,40
