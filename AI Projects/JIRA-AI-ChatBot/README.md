@@ -1,6 +1,6 @@
-# Jira Ticket RAG Chatbot
+# JIRA-AI-ChatBot
 
-Production-ready full-stack scaffold for a Jira ticket RAG chatbot. Users can ask questions about Jira tickets, search tickets, inspect ticket details, identify blockers, and get solution recommendations grounded only in Jira data.
+Production-ready full-stack scaffold for a Jira ticket AI chatbot. Users can ask questions about Jira tickets, search tickets, inspect ticket details, identify blockers, and get solution recommendations grounded only in Jira data.
 
 The app runs with mock Jira tickets first, so no Jira credentials are required for local development.
 
@@ -84,7 +84,7 @@ Open the frontend at `http://localhost:5173`. The backend runs at `http://localh
 
 ## Environment Variables
 
-Backend defaults are in [backend/.env.example](/Users/srihemanthreddy/PycharmProjects/ServiceNow-ai-chatBot/backend/.env.example).
+Backend defaults are in `backend/.env.example`.
 
 Important values:
 
@@ -97,7 +97,7 @@ Important values:
 
 ## Mock Jira Data
 
-The app uses [sample_data/jira_tickets.json](/Users/srihemanthreddy/PycharmProjects/ServiceNow-ai-chatBot/sample_data/jira_tickets.json). To regenerate the source fixture:
+The app uses `sample_data/jira_tickets.json`. To regenerate the source fixture:
 
 ```bash
 python3 scripts/generate_dummy_jira_tickets.py --out-dir sample_data --json-name jira_tickets.json

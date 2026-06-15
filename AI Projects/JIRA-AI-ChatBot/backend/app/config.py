@@ -25,7 +25,7 @@ def _bool(name: str, default: bool) -> bool:
 
 @dataclass(frozen=True)
 class Settings:
-    app_name: str = os.getenv("APP_NAME", "Jira Ticket RAG Chatbot")
+    app_name: str = os.getenv("APP_NAME", "JIRA-AI-ChatBot")
     environment: str = os.getenv("ENVIRONMENT", "local")
     database_url: str = os.getenv("DATABASE_URL", f"sqlite:///{BACKEND_ROOT / 'jira_rag_local.db'}")
     redis_url: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
