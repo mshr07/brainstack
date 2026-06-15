@@ -1,0 +1,8 @@
+# Core backend uses the Python standard library.
+#
+# Optional API server:
+# fastapi>=0.111
+# uvicorn>=0.30
+#
+# Optional test runner:
+# pytest>=8.0
