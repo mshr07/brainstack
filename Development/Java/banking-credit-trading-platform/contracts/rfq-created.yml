@@ -1,0 +1,10 @@
+description: RFQ created event contract
+name: rfq_created_event
+topic: rfq.created
+payload:
+  eventType: rfq.created
+  aggregateId: rfq-demo-1
+  clientId: client-alpha
+  instrumentId: bond-apple-2029
+  side: BUY
+  notional: 1000000

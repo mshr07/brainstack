@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: api-gateway
+server:
+  port: ${SERVER_PORT:8080}
+security:
+  jwt:
+    secret: ${DEMO_JWT_SECRET:local-demo-secret-change-me-with-at-least-32-characters}
+    ttl-seconds: 3600
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html

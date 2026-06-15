@@ -1,0 +1,21 @@
+pipeline {
+  agent any
+
+  stages {
+    stage('Checkout') {
+      steps { checkout scm }
+    }
+    stage('Build and Test') {
+      steps { sh 'mvn -B clean test' }
+    }
+    stage('Package') {
+      steps { sh 'mvn -B -DskipTests package' }
+    }
+    stage('Docker Images') {
+      steps { echo 'Template: build service images here' }
+    }
+    stage('Kubernetes Deploy') {
+      steps { echo 'Template: kubectl apply -f infra/k8s' }
+    }
+  }
+}

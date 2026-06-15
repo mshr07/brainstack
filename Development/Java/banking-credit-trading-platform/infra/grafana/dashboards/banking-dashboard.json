@@ -1,0 +1,22 @@
+{
+  "title": "Banking Credit Trading Platform",
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "API Latency",
+      "targets": [{"expr": "http_server_requests_seconds_count"}]
+    },
+    {
+      "type": "stat",
+      "title": "RFQs Created",
+      "targets": [{"expr": "banking_rfqs_created_total"}]
+    },
+    {
+      "type": "stat",
+      "title": "Risk Rejections",
+      "targets": [{"expr": "banking_risk_rejections_total"}]
+    }
+  ],
+  "schemaVersion": 39,
+  "version": 1
+}

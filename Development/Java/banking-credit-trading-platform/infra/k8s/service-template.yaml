@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: market-data-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: market-data-service
+  template:
+    metadata:
+      labels:
+        app: market-data-service
+    spec:
+      containers:
+        - name: market-data-service
+          image: banking-credit-trading-platform/market-data-service:local
+          envFrom:
+            - configMapRef:
+                name: banking-platform-config
+          ports:
+            - containerPort: 8081
