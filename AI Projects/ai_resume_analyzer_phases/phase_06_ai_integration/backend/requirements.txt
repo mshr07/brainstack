@@ -1,0 +1,12 @@
+fastapi==0.136.1
+uvicorn==0.46.0
+pydantic==2.13.4
+python-multipart==0.0.28
+pypdf==6.11.0
+SQLAlchemy==2.0.43
+numpy==2.3.3
+pgvector==0.4.1
+psycopg2-binary==2.9.10
+pytest==8.2.2
+httpx==0.28.1
+openai==1.108.0

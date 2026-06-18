@@ -1,0 +1,5 @@
+We are looking for a Python backend intern who can build REST APIs using FastAPI.
+The candidate should understand SQL, PostgreSQL, Docker, Git, and basic NLP.
+Experience with database design, API testing, and deployment is a plus.
+Knowledge of AWS and CI/CD is helpful.
+

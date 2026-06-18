@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Phase 2 Resume Analyzer</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main>
+      <section>
+        <p class="eyebrow">Phase 2</p>
+        <h1>Resume Upload Analyzer</h1>
+        <p id="status">Checking API...</p>
+      </section>
+
+      <form id="form">
+        <label>
+          Resume file
+          <input name="resume" type="file" accept=".txt,.pdf" required />
+        </label>
+        <label>
+          Job description
+          <textarea name="job_description" rows="10" required></textarea>
+        </label>
+        <button>Analyze</button>
+      </form>
+
+      <section id="result" class="result"></section>
+    </main>
+    <script src="app.js"></script>
+  </body>
+</html>
+

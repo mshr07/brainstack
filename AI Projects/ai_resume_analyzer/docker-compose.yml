@@ -22,8 +22,7 @@ services:
       CORS_ORIGINS: "*"
       USE_TRANSFORMERS: "false"
     ports:
-      - "8000:8000"
+      - "8000:8002"
 
 volumes:
   pgvector_data:
-

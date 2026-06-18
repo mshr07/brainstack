@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Phase 4 Semantic Analyzer</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main>
+      <section>
+        <p class="eyebrow">Phase 4</p>
+        <h1>Semantic Resume Analyzer</h1>
+        <p id="status">Checking API...</p>
+      </section>
+      <form id="form">
+        <label>Resume file <input name="resume" type="file" accept=".txt,.pdf" required /></label>
+        <label>Job description <textarea name="job_description" rows="10" required></textarea></label>
+        <button>Analyze With Semantics</button>
+      </form>
+      <section id="result"></section>
+    </main>
+    <script src="app.js"></script>
+  </body>
+</html>
+
