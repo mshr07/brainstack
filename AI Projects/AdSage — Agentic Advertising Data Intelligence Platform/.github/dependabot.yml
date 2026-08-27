@@ -1,0 +1,17 @@
+version: 2
+updates:
+  - package-ecosystem: maven
+    directory: /services/adsage-platform-service
+    schedule: { interval: weekly }
+  - package-ecosystem: pip
+    directory: /services/ai-orchestrator
+    schedule: { interval: weekly }
+  - package-ecosystem: npm
+    directory: /apps/web
+    schedule: { interval: weekly }
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly }
+  - package-ecosystem: docker
+    directory: /
+    schedule: { interval: weekly }
