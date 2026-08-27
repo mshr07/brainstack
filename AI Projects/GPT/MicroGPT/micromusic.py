@@ -6,8 +6,6 @@ Instead of learning the pattern of names, it learns the pattern of music
 
 python micromusic.py          trains on CPU, prints hallucinated melodies
 python micromusic.py --save   same + saves MIDI files you can listen to
-
-@kaizenman
 """
 
 import os  # os.path.exists
