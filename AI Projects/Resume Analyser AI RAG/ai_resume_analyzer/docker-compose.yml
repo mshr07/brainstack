@@ -12,7 +12,7 @@ services:
       - pgvector_data:/var/lib/postgresql/data
 
   backend:
-    build: ./backend
+    build: backend
     container_name: ai_resume_analyzer_backend
     depends_on:
       - db
