@@ -1,4 +1,0 @@
-adsage:
-  security:
-    allowed-origins:
-      - http://localhost:5173
