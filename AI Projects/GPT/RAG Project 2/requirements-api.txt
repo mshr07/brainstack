@@ -1,0 +1,5 @@
+# Phase 10 adds an HTTP layer on top of the existing prebuilt RAG requirements.
+-r requirements-prebuilt.txt
+
+fastapi
+uvicorn[standard]

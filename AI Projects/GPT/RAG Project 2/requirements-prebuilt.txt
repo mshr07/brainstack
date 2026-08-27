@@ -1,0 +1,10 @@
+# Prebuilt implementations used by prebuilt_tools_rag.py
+openai>=1.108.0
+tiktoken
+langchain-community==0.3.31
+langchain-text-splitters
+langchain-openai>=1.0.1
+langchain-chroma>=1.1.0
+chromadb
+scikit-learn
+ragas==0.4.3
