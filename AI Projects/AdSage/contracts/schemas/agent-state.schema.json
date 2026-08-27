@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://adsage.example/contracts/agent-state/v1",
+  "title": "AdSage bounded agent state",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "run_id", "request_id", "conversation_id", "tenant_id", "subject_id",
+    "capabilities", "question", "deadline_at", "budgets", "step_count",
+    "repair_count", "intent", "plan", "evidence", "tool_results",
+    "validations", "limitations", "status"
+  ],
+  "properties": {
+    "run_id": { "type": "string", "format": "uuid" },
+    "request_id": { "type": "string", "minLength": 8, "maxLength": 128 },
+    "conversation_id": { "type": "string", "format": "uuid" },
+    "tenant_id": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "subject_id": { "type": "string", "minLength": 1, "maxLength": 256 },
+    "capabilities": { "type": "array", "uniqueItems": true, "maxItems": 64, "items": { "type": "string" } },
+    "question": { "type": "string", "minLength": 1, "maxLength": 4000 },
+    "deadline_at": { "type": "string", "format": "date-time" },
+    "budgets": { "$ref": "#/$defs/budgets" },
+    "step_count": { "type": "integer", "minimum": 0, "maximum": 32 },
+    "repair_count": { "type": "integer", "minimum": 0, "maximum": 3 },
+    "intent": { "enum": ["documentation", "metadata", "analytical", "clarification", "unsafe"] },
+    "plan": { "type": "array", "maxItems": 32, "items": { "$ref": "#/$defs/planStep" } },
+    "evidence": { "type": "array", "maxItems": 100, "items": { "$ref": "#/$defs/evidence" } },
+    "tool_results": { "type": "array", "maxItems": 24, "items": { "$ref": "#/$defs/toolResult" } },
+    "validations": { "type": "array", "maxItems": 100, "items": { "$ref": "#/$defs/validation" } },
+    "approval": { "anyOf": [{ "type": "null" }, { "$ref": "#/$defs/approval" }] },
+    "answer": { "type": ["string", "null"], "maxLength": 16000 },
+    "limitations": { "type": "array", "maxItems": 20, "items": { "type": "string", "maxLength": 500 } },
+    "status": { "enum": ["running", "completed", "clarification", "unsafe", "approval_required", "failed", "budget_exceeded"] },
+    "terminal_error": { "anyOf": [{ "type": "null" }, { "$ref": "#/$defs/terminalError" }] }
+  },
+  "$defs": {
+    "budgets": {
+      "type": "object", "additionalProperties": false,
+      "required": ["max_steps", "max_repairs", "max_input_tokens", "max_output_tokens", "max_tool_calls", "max_result_bytes"],
+      "properties": {
+        "max_steps": { "type": "integer", "minimum": 1, "maximum": 32 },
+        "max_repairs": { "type": "integer", "minimum": 0, "maximum": 3 },
+        "max_input_tokens": { "type": "integer", "minimum": 128, "maximum": 100000 },
+        "max_output_tokens": { "type": "integer", "minimum": 64, "maximum": 16000 },
+        "max_tool_calls": { "type": "integer", "minimum": 0, "maximum": 24 },
+        "max_result_bytes": { "type": "integer", "minimum": 1024, "maximum": 10000000 },
+        "max_estimated_cost_usd": { "type": ["number", "null"], "minimum": 0, "maximum": 100 }
+      }
+    },
+    "planStep": {
+      "type": "object", "additionalProperties": false,
+      "required": ["step_id", "capability", "status"],
+      "properties": {
+        "step_id": { "type": "string" },
+        "capability": { "type": "string" },
+        "status": { "enum": ["pending", "running", "completed", "failed", "skipped"] },
+        "depends_on": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "evidence": {
+      "type": "object", "additionalProperties": false,
+      "required": ["evidence_id", "kind", "title", "source_version"],
+      "properties": {
+        "evidence_id": { "type": "string" },
+        "kind": { "enum": ["metadata", "glossary", "document", "graph", "query_result"] },
+        "title": { "type": "string" },
+        "source_version": { "type": "string" },
+        "uri": { "type": ["string", "null"] },
+        "score": { "type": ["number", "null"], "minimum": 0, "maximum": 1 }
+      }
+    },
+    "toolResult": {
+      "type": "object", "additionalProperties": false,
+      "required": ["tool_call_id", "tool_name", "status", "duration_ms"],
+      "properties": {
+        "tool_call_id": { "type": "string" },
+        "tool_name": { "type": "string" },
+        "status": { "enum": ["succeeded", "failed", "denied", "timed_out"] },
+        "duration_ms": { "type": "integer", "minimum": 0 },
+        "result_reference": { "type": ["string", "null"] },
+        "error_code": { "type": ["string", "null"] }
+      }
+    },
+    "validation": {
+      "type": "object", "additionalProperties": false,
+      "required": ["stage", "passed", "code"],
+      "properties": {
+        "stage": { "type": "string" },
+        "passed": { "type": "boolean" },
+        "code": { "type": "string" },
+        "detail": { "type": ["string", "null"], "maxLength": 1000 }
+      }
+    },
+    "approval": {
+      "type": "object", "additionalProperties": false,
+      "required": ["approval_id", "reason", "state", "version"],
+      "properties": {
+        "approval_id": { "type": "string", "format": "uuid" },
+        "reason": { "type": "string" },
+        "state": { "enum": ["pending", "approved", "rejected", "expired"] },
+        "version": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "terminalError": {
+      "type": "object", "additionalProperties": false,
+      "required": ["code", "safe_message", "retryable"],
+      "properties": {
+        "code": { "type": "string" },
+        "safe_message": { "type": "string" },
+        "retryable": { "type": "boolean" }
+      }
+    }
+  }
+}

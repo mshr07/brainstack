@@ -1,0 +1,102 @@
+name: AdSage quality gates
+
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  java:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - name: Format and test platform service
+        run: mvn -f services/adsage-platform-service/pom.xml spotless:check verify
+
+  python-and-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.11.13"
+          enable-cache: true
+      - name: Install locked dependencies
+        run: uv sync --project services/ai-orchestrator --locked --all-groups
+      - name: Static checks
+        run: |
+          uv run --project services/ai-orchestrator ruff check services/ai-orchestrator scripts
+          uv run --project services/ai-orchestrator mypy services/ai-orchestrator/src
+      - name: Test orchestrator
+        run: PYTHONPATH=services/ai-orchestrator/src uv run --project services/ai-orchestrator pytest services/ai-orchestrator/tests
+      - name: Validate cross-service contracts
+        run: uv run --project services/ai-orchestrator python scripts/validate_contracts.py
+
+  data-pipelines:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.11.13"
+          enable-cache: true
+      - name: Install locked pipeline dependencies
+        run: uv sync --project pipelines --locked --all-groups
+      - name: Static checks
+        run: |
+          uv run --project pipelines ruff check pipelines
+          uv run --project pipelines mypy --config-file pipelines/pyproject.toml pipelines/src
+      - name: Test deterministic medallion pipeline
+        run: PYTHONPATH=pipelines/src uv run --project pipelines pytest pipelines/tests
+
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20.17.0
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - run: npm ci --prefix apps/web
+      - run: npm run lint --prefix apps/web
+      - run: npm run typecheck --prefix apps/web
+      - run: npm test --prefix apps/web -- --run
+      - run: npm run build --prefix apps/web
+
+  configuration-and-security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Compose topology
+        run: docker compose config --quiet
+      - name: Scan repository and lockfiles
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,secret,misconfig
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
