@@ -1,0 +1,123 @@
+openapi: 3.1.0
+info:
+  title: AdSage AI Orchestrator Internal API
+  version: 1.0.0-phase1
+  description: Workload-authenticated contract; never expose this service publicly.
+servers:
+  - url: http://ai-orchestrator:8090
+security:
+  - internalBearer: []
+paths:
+  /internal/v1/orchestrations:
+    post:
+      operationId: orchestrate
+      parameters:
+        - name: X-Request-Id
+          in: header
+          required: true
+          schema: { type: string, minLength: 8, maxLength: 128, pattern: "^[A-Za-z0-9._:-]+$" }
+        - name: traceparent
+          in: header
+          required: false
+          schema: { type: string, maxLength: 128 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/OrchestrationRequest" }
+      responses:
+        "200":
+          description: Bounded terminal or approval state
+          headers:
+            X-Request-Id:
+              schema: { type: string }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OrchestrationResponse" }
+        "401": { description: Missing or invalid workload credential }
+        "422": { description: Invalid request }
+        "429": { description: Capacity/budget rejected }
+  /health:
+    get:
+      security: []
+      operationId: health
+      responses:
+        "200": { description: Process health }
+components:
+  securitySchemes:
+    internalBearer: { type: http, scheme: bearer }
+  schemas:
+    OrchestrationRequest:
+      type: object
+      additionalProperties: false
+      required: [runId, conversationId, tenantId, subjectId, capabilities, question, clientTimezone, locale, deadlineAt, budgets]
+      properties:
+        runId: { type: string, format: uuid }
+        conversationId: { type: string, format: uuid }
+        tenantId: { type: string, minLength: 1, maxLength: 128 }
+        subjectId: { type: string, minLength: 1, maxLength: 256 }
+        capabilities:
+          type: array
+          uniqueItems: true
+          maxItems: 64
+          items: { type: string, pattern: "^[a-z][a-z0-9_.:-]+$" }
+        question: { type: string, minLength: 1, maxLength: 4000 }
+        clientTimezone: { type: string, minLength: 1, maxLength: 64 }
+        locale: { type: string, minLength: 2, maxLength: 16 }
+        deadlineAt: { type: string, format: date-time }
+        budgets: { $ref: "#/components/schemas/Budgets" }
+    Budgets:
+      type: object
+      additionalProperties: false
+      required: [maxSteps, maxRepairs, maxInputTokens, maxOutputTokens, maxToolCalls, maxResultBytes]
+      properties:
+        maxSteps: { type: integer, minimum: 1, maximum: 32 }
+        maxRepairs: { type: integer, minimum: 0, maximum: 3 }
+        maxInputTokens: { type: integer, minimum: 128, maximum: 100000 }
+        maxOutputTokens: { type: integer, minimum: 64, maximum: 16000 }
+        maxToolCalls: { type: integer, minimum: 0, maximum: 24 }
+        maxResultBytes: { type: integer, minimum: 1024, maximum: 10000000 }
+        maxEstimatedCostUsd: { type: number, minimum: 0, maximum: 100 }
+    OrchestrationResponse:
+      type: object
+      additionalProperties: false
+      required: [runId, requestId, state, intent, stepCount, evidence, validations, limitations]
+      properties:
+        runId: { type: string, format: uuid }
+        requestId: { type: string }
+        state: { type: string, enum: [completed, clarification, unsafe, approval_required, failed, budget_exceeded] }
+        intent: { type: string, enum: [documentation, metadata, analytical, clarification, unsafe] }
+        stepCount: { type: integer, minimum: 0, maximum: 32 }
+        answer: { type: string, maxLength: 16000 }
+        evidence:
+          type: array
+          maxItems: 100
+          items: { $ref: "#/components/schemas/Evidence" }
+        validations:
+          type: array
+          maxItems: 100
+          items: { $ref: "#/components/schemas/Validation" }
+        limitations:
+          type: array
+          maxItems: 20
+          items: { type: string, maxLength: 500 }
+    Evidence:
+      type: object
+      additionalProperties: false
+      required: [evidenceId, kind, title, sourceVersion]
+      properties:
+        evidenceId: { type: string }
+        kind: { type: string, enum: [metadata, glossary, document, graph, query_result] }
+        title: { type: string }
+        sourceVersion: { type: string }
+        uri: { type: string, format: uri-reference }
+        score: { type: number, minimum: 0, maximum: 1 }
+    Validation:
+      type: object
+      additionalProperties: false
+      required: [stage, passed, code]
+      properties:
+        stage: { type: string }
+        passed: { type: boolean }
+        code: { type: string }
+        detail: { type: string, maxLength: 1000 }
